@@ -3,4 +3,4 @@
  * cron: 3 5 12/18 * * *
  */
 
-import '../v2ex-topics'
+import './src/v2ex/hot-topics'

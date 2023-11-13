@@ -1,19 +1,10 @@
-import axios from 'axios'
+import { Robot } from '@isayme/dingtalk-robot'
 
-let webhookUrl = process.env.DINGTALK_WEBHOOK_URL
+let dingtalkRobot: Robot = new Robot({
+  url: process.env.DINGTALK_WEBHOOK_URL,
+  accessToken: process.env.DINGTALK_WEBHOOK_ACCESS_TOKEN,
+  secret: process.env.DINGTALK_WEBHOOK_SECRET,
+  timeout: 3000,
+})
 
-export async function notifyDingtalk(data: any) {
-  if (!webhookUrl) {
-    return
-  }
-
-  return axios.request({
-    method: 'POST',
-    url: webhookUrl,
-    timeout: 3000,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    data: JSON.stringify(data),
-  })
-}
+export { dingtalkRobot }

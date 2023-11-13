@@ -1,7 +1,7 @@
-import { getBrowser } from './browser'
-import { formatYYYYMMDD } from './util/date'
-import { notifyDingtalk } from './util/dingtalk'
-import { runMain } from './util/run'
+import { getBrowser } from '../util/browser'
+import { formatYYYYMMDD } from '../util/date'
+import { dingtalkRobot } from '../util/dingtalk'
+import { runMain } from '../util/run'
 
 async function main() {
   const browser = await getBrowser()
@@ -30,12 +30,6 @@ async function main() {
     topicText.push(`- [${title}](https://v2ex.com${href})`)
   }
 
-  await notifyDingtalk({
-    msgtype: 'markdown',
-    markdown: {
-      title: title,
-      text: topicText.join('\n'),
-    },
-  })
+  await dingtalkRobot.markdown(title, topicText.join('\n'))
 }
 runMain(main)

@@ -13,8 +13,10 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "@isayme/dingtalk-robot": "^0.1.0",
     "axios": "^1.6.0",
     "dayjs": "^1.11.10",
+    "lodash": "^4.17.21",
     "playwright": "^1.39.0"
   }
 }
