@@ -5,6 +5,8 @@ export function getBrowser() {
 
   let socks5Server = process.env.SOCKS5_SERVER
   if (socks5Server) {
+    console.log('使用s5代理')
+
     opts = {
       proxy: {
         server: socks5Server,
