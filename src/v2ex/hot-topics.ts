@@ -8,9 +8,13 @@ async function main() {
 
   const page = await browser.newPage()
 
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false })
+  })
+
   // 等待结果
   await Promise.all([
-    page.goto('https://v2ex.com'),
+    page.goto('https://v2ex.com/?tab=all'),
     page.waitForSelector('#TopicsHot'),
   ])
 
@@ -31,5 +35,7 @@ async function main() {
   }
 
   await dingtalkRobot.markdown(title, topicText.join('\n'))
+
+  await browser.close()
 }
 runMain(main)
