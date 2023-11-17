@@ -11,3 +11,7 @@ dayjs.tz.setDefault('Asia/Shanghai')
 export function formatYYYYMMDD(d: Date) {
   return dayjs(d).format('YYYY-MM-DD')
 }
+
+export function formatYYYYMMDDHHmm(d: Date) {
+  return dayjs(d).format('YYYY-MM-DD HH:mm')
+}
