@@ -1,10 +1,12 @@
+import logger from './logger'
+
 export async function runMain(fn: Function) {
   fn()
     .then(() => {
-      console.log('ok')
+      logger.info('任务完成')
     })
     .catch((err: any) => {
-      console.warn(`fail: ${err}`)
+      logger.warn(`任务失败: ${err}`)
     })
     .finally(() => {
       process.exit()

@@ -38,4 +38,5 @@ async function main() {
 
   await browser.close()
 }
+
 runMain(main)

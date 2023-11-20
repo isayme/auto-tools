@@ -18,6 +18,8 @@
     "axios": "^1.6.0",
     "dayjs": "^1.11.10",
     "lodash": "^4.17.21",
+    "pino": "^8.16.2",
+    "pino-pretty": "^10.2.3",
     "playwright": "^1.39.0",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-adblocker": "^2.13.6",
