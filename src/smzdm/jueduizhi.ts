@@ -38,6 +38,8 @@ async function main() {
   }
 
   await dingtalkRobot.markdown(title, text.join('\n'))
+
+  await browser.close()
 }
 
 runMain(main)

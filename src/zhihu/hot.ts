@@ -4,13 +4,13 @@
  */
 
 import lodash from 'lodash'
-import { getBrowser } from '../util/browser'
+import { chromium } from 'playwright'
 import { formatYYYYMMDDHHmm } from '../util/date'
 import { dingtalkRobot } from '../util/dingtalk'
 import { runMain } from '../util/run'
 
 async function main() {
-  const browser = await getBrowser()
+  const browser = await chromium.launch()
 
   const page = await browser.newPage()
 

@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@isayme/dingtalk-robot": "^0.1.0",
+    "@kvs/env": "^2.1.5",
+    "@kvs/node-localstorage": "^2.1.5",
     "@playwright/test": "^1.39.0",
     "axios": "^1.6.0",
     "dayjs": "^1.11.10",
