@@ -179,7 +179,7 @@ async function browseUrl(page: Page, { name, url, conditions }) {
     })
 
     if (mds.length > 0) {
-      mds.unshift(`## ${name} 价格变动房源`)
+      mds.unshift(`## [${name}](${url}) 价格变动房源`)
     }
   }
 
@@ -187,7 +187,7 @@ async function browseUrl(page: Page, { name, url, conditions }) {
   logger.info(`新增房源数 ${newHouses.length}`)
 
   if (newHouses.length > 0) {
-    mds.push(`## ${name} 新增房源`)
+    mds.push(`## [${name}](${url}) 新增房源`)
     newHouses.forEach((item) => {
       mds.push(`### [新增: ${item.title}](${item.href})`)
       mds.push(`${item.houseInfo} ${item.totalPrice}(${item.unitPrice})`)
@@ -200,6 +200,11 @@ async function browseUrl(page: Page, { name, url, conditions }) {
     await dingtalkRobot.markdown({
       title: `${name} 二手房信息`,
       text: mds.join('\n'),
+    })
+  } else {
+    await dingtalkRobot.markdown({
+      title: `${name} 二手房信息`,
+      text: `[${name}](${url}) 房源信息无更新`,
     })
   }
 
