@@ -26,6 +26,7 @@
     "playwright": "^1.39.0",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-adblocker": "^2.13.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "socks-proxy-agent": "^8.0.2"
   }
 }
