@@ -1,20 +1,35 @@
-import { getBrowser } from '../util/browser'
+import { LaunchOptions } from 'playwright'
+import { firefox } from 'playwright-extra'
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { formatYYYYMMDD } from '../util/date'
 import { dingtalkRobot } from '../util/dingtalk'
+import logger from '../util/logger'
 import { runMain } from '../util/run'
 
 async function main() {
-  const browser = await getBrowser()
+  firefox.use(StealthPlugin())
+
+  let opts: LaunchOptions = {}
+
+  let socks5Server = process.env.SOCKS5_SERVER
+  if (socks5Server) {
+    logger.info('使用s5代理')
+
+    opts.proxy = {
+      server: socks5Server,
+    }
+  }
+  // const browser = await firefox.launch(opts)
+  const browser = await firefox.launchPersistentContext('./.pw-cache', opts)
 
   const page = await browser.newPage()
 
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => false })
-  })
+  const userAgent = await page.evaluate('navigator.userAgent')
+  logger.info(userAgent)
 
   // 等待结果
   await Promise.all([
-    page.goto('https://v2ex.com/?tab=all'),
+    page.goto('https://v2ex.com/?tab=all', { timeout: 70000 }),
     page.waitForSelector('#TopicsHot'),
   ])
 
