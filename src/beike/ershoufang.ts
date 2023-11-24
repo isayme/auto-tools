@@ -184,6 +184,24 @@ async function browseUrl(
     }
   }
 
+  {
+    // 总价升序
+    let orderByPriceLocator = page.locator('.orderTag li', { hasText: '总价' })
+    let orderByPriceLocatorCount = await orderByPriceLocator.count()
+    logger.info('找到"总价"排序')
+    if (orderByPriceLocatorCount > 0) {
+      let classAttr = await orderByPriceLocator.first().getAttribute('class')
+      if (classAttr && classAttr.split(' ').includes('selected')) {
+        logger.warn('当前已是"总价"排序')
+      } else {
+        logger.info('点击选择"总价"排序')
+        await orderByPriceLocator.click()
+        await randomDelay(1000, 3000)
+        await page.waitForLoadState('networkidle')
+      }
+    }
+  }
+
   await randomDelay(1500, 5000)
 
   let sellList = await page
