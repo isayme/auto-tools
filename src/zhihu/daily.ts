@@ -18,6 +18,9 @@ async function main() {
   let result: ILatestStories = await axios
     .request({
       url: 'https://news-at.zhihu.com/api/4/stories/latest',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+      },
     })
     .then((resp) => {
       let { status, data } = resp
