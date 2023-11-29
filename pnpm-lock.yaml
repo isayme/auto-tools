@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@isayme/dingtalk-robot':
-    specifier: ^0.1.0
-    version: 0.1.0
+    specifier: ^0.2.0
+    version: 0.2.0
   '@kvs/env':
     specifier: ^2.1.5
     version: 2.1.5
@@ -20,6 +20,9 @@ dependencies:
   axios:
     specifier: ^1.6.0
     version: 1.6.0
+  axios-retry:
+    specifier: ^4.0.0
+    version: 4.0.0(axios@1.6.0)
   dayjs:
     specifier: ^1.11.10
     version: 1.11.10
@@ -127,10 +130,11 @@ packages:
       '@jridgewell/trace-mapping': 0.3.9
     dev: true
 
-  /@isayme/dingtalk-robot@0.1.0:
-    resolution: {integrity: sha512-StYuqh8fGFf9j0ENBkz5zJXnnX7njtQEA45KsvZeY2jnXY6Op8aBcvgdProdBWlIDsyYbwAk6ZKfUmpVBF0XsQ==}
+  /@isayme/dingtalk-robot@0.2.0:
+    resolution: {integrity: sha512-XyVTkGz5JF48O180hgzpfnwHFpN0RZ+uobeLA3c6nvUj0DA7NrBp2WvU4kt7/LX53nKhFoAatbF2EGoO9XPoBw==}
     dependencies:
       axios: 1.6.0
+      axios-retry: 4.0.0(axios@1.6.0)
     transitivePeerDependencies:
       - debug
     dev: false
@@ -381,6 +385,15 @@ packages:
   /atomic-sleep@1.0.0:
     resolution: {integrity: sha512-kNOjDqAh7px0XWNI+4QbzoiR/nTkHAWNud2uvnJquD1/x5a7EQZMJT0AczqK0Qn67oY/TTQ1LbUKajZpp3I9tQ==}
     engines: {node: '>=8.0.0'}
+    dev: false
+
+  /axios-retry@4.0.0(axios@1.6.0):
+    resolution: {integrity: sha512-F6P4HVGITD/v4z9Lw2mIA24IabTajvpDZmKa6zq/gGwn57wN5j1P3uWrAV0+diqnW6kTM2fTqmWNfgYWGmMuiA==}
+    peerDependencies:
+      axios: 0.x || 1.x
+    dependencies:
+      axios: 1.6.0
+      is-retry-allowed: 2.2.0
     dev: false
 
   /axios@1.6.0:
@@ -915,6 +928,11 @@ packages:
     engines: {node: '>=0.10.0'}
     dependencies:
       isobject: 3.0.1
+    dev: false
+
+  /is-retry-allowed@2.2.0:
+    resolution: {integrity: sha512-XVm7LOeLpTW4jV19QSH38vkswxoLud8sQ57YwJVTPWdiaI9I8keEhGFpBlslyVsgdQy4Opg8QOLb8YRgsyZiQg==}
+    engines: {node: '>=10'}
     dev: false
 
   /isobject@3.0.1:

@@ -13,11 +13,12 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@isayme/dingtalk-robot": "^0.1.0",
+    "@isayme/dingtalk-robot": "^0.2.0",
     "@kvs/env": "^2.1.5",
     "@kvs/node-localstorage": "^2.1.5",
     "@playwright/test": "^1.39.0",
     "axios": "^1.6.0",
+    "axios-retry": "^4.0.0",
     "dayjs": "^1.11.10",
     "delay": "5",
     "lodash": "^4.17.21",

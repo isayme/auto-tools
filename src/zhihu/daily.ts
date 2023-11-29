@@ -1,5 +1,5 @@
-import axios from 'axios'
 import lodash from 'lodash'
+import { axiosInstance, expectResponseOk } from '../util/axios'
 import { dingtalkRobot } from '../util/dingtalk'
 import { runMain } from '../util/run'
 
@@ -15,20 +15,17 @@ interface ILatestStories {
 }
 
 async function main() {
-  let result: ILatestStories = await axios
+  let result: ILatestStories = await axiosInstance
     .request({
       url: 'https://news-at.zhihu.com/api/4/stories/latest',
       headers: {
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+        'user-agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
       },
     })
     .then((resp) => {
-      let { status, data } = resp
-      if (status >= 300) {
-        throw new Error(
-          `request fail status ${status}, respBody: ${JSON.stringify(data)}`,
-        )
-      }
+      let { data } = resp
+      expectResponseOk(resp)
 
       return data
     })

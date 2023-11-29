@@ -1,9 +1,9 @@
-import axios from 'axios'
 import lodash from 'lodash'
 import { LaunchOptions } from 'playwright'
 import { firefox } from 'playwright-extra'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { SocksProxyAgent } from 'socks-proxy-agent'
+import { axiosInstance, expectResponseOk } from '../util/axios'
 import { formatYYYYMMDD } from '../util/date'
 import { dingtalkRobot } from '../util/dingtalk'
 import logger from '../util/logger'
@@ -25,7 +25,7 @@ async function getHotTopicWithAPI(): Promise<ITopic[]> {
     httpAgent = new SocksProxyAgent(socks5Server)
   }
 
-  let result: ITopic[] = await axios
+  let result: ITopic[] = await axiosInstance
     .request({
       method: 'GET',
       url: 'https://v2ex.com/api/topics/hot.json',
@@ -33,12 +33,8 @@ async function getHotTopicWithAPI(): Promise<ITopic[]> {
       httpsAgent: httpAgent,
     })
     .then((resp) => {
-      let { status, data } = resp
-      if (status >= 300) {
-        throw new Error(
-          `request fail status ${status}, respBody: ${JSON.stringify(data)}`,
-        )
-      }
+      let { data } = resp
+      expectResponseOk(resp)
 
       return data
     })
@@ -83,7 +79,7 @@ async function getHotTopicWithPlaywright(): Promise<ITopic[]> {
         topic.getAttribute('href'),
       ])
 
-      return { title, url }
+      return { title, url: `https://v2ex.com${url}` }
     }),
   )
 
@@ -112,7 +108,7 @@ async function main() {
 
   for (let topic of hotTopics) {
     let { title, url } = topic
-    topicText.push(`- [${title}](https://v2ex.com${url})`)
+    topicText.push(`- [${title}](${url})`)
   }
 
   await dingtalkRobot.markdown(title, topicText.join('\n'))
