@@ -1,71 +1,67 @@
-import { kvsEnvStorage } from '@kvs/env'
+import dayjs from 'dayjs'
+import mongoose from 'mongoose'
+
 import lodash from 'lodash'
+import ms from 'ms'
 import { Page, chromium } from 'playwright'
+import { District, House, IDistrict, IHouse } from '../schema/beike'
 import { randomDelay } from '../util/delay'
 import { dingtalkRobot } from '../util/dingtalk'
 import logger from '../util/logger'
 import { runMain } from '../util/run'
 
-interface IHouseInfo {
-  title: string
-  imageUrl: string
-  href: string
-  positionInfo: string
-  houseInfo: string
-  totalPrice: string
-  unitPrice: string
-}
-
 async function main() {
+  let mongoUrl = process.env.BEIKE_MONGODB_URI
+  if (!mongoUrl) {
+    logger.warn('环境变量 BEIKE_MONGODB_URI 未配置')
+    return
+  }
+
+  await mongoose.connect(mongoUrl)
+
   const browser = await chromium.launch()
   const page: Page = await browser.newPage({})
 
-  const districtText = process.env.BEIKE_ERSHOU_FANG_DISTRICT_MAP
-  if (!districtText) {
-    logger.warn('环境变量（BEIKE_ERSHOU_FANG_DISTRICT_MAP）不存在或值为空')
-    return
-  }
-  let districtMap = {}
+  let now = new Date()
 
-  try {
-    districtMap = JSON.parse(districtText)
-  } catch (e) {
-    logger.warn(`环境变量（BEIKE_ERSHOU_FANG_DISTRICT_MAP）解析失败: ${e}`)
-    return
-  }
+  const districts = await District.find({})
+  logger.info(`共有 ${districts.length} 个小区待处理`)
+  for (let district of districts) {
+    let { name, lastView, minViewDuration = '4h' } = district
+    let minViewDurationInMills = ms(minViewDuration)
 
-  for (let url in districtMap) {
-    let item = districtMap[url]
+    if (!lastView) {
+      logger.info(`首次查看小区 ${name}`)
+    } else if (
+      dayjs(lastView).add(minViewDurationInMills, 'millisecond').isBefore(now)
+    ) {
+      logger.info(`距离上次查看小区 ${name} 已超过 ${minViewDuration}`)
+    } else {
+      logger.info(`距离上次查看小区 ${name} 未超过 ${minViewDuration}`)
+      continue
+    }
 
-    await browseUrl(page, { ...item, url })
+    await browseUrl(page, district)
   }
 
   await browser.close()
 }
 
-async function browseUrl(
-  page: Page,
-  { name, url, conditions, customPrice, customArea },
-) {
+async function browseUrl(page: Page, district: IDistrict) {
+  let { name, url, conditions, minPrice, maxPrice, minArea, maxArea } = district
+
   console.log('\n')
   logger.info(
-    `查看小区 ${name}, 网址: ${url}, 删选条件: ${conditions}, 删选价格: ${JSON.stringify(
-      customPrice,
-    )}, 筛选面积: ${JSON.stringify(customArea)}`,
+    `查看小区 ${name}, 网址: ${url}, 删选条件: ${conditions}, 删选价格: [${minPrice}, ${maxPrice}], 筛选面积: [${minArea}, ${maxArea}]`,
   )
 
-  const storage = await kvsEnvStorage({
-    name: 'beike-ershoufang',
-    version: 1,
-  })
-
-  const lastHouses = await storage.get(url)
+  const lastHouses = await House.find({ _districtId: district._id })
   const lastHousesMap = {}
   if (Array.isArray(lastHouses)) {
     logger.info(`上次记录房源数 ${lastHouses.length}`)
 
     lastHouses.forEach((house) => {
-      lastHousesMap[house['href']] = house
+      lastHousesMap[house.url] = house
     })
   }
 
@@ -108,8 +104,6 @@ async function browseUrl(
   {
     // 自定义价格筛选
 
-    let minPrice = lodash.get(customPrice, 'min')
-    let maxPrice = lodash.get(customPrice, 'max')
     logger.info(`价格筛选: [${minPrice}, ${maxPrice}]`)
 
     if (lodash.isNumber(minPrice) || lodash.isNumber(maxPrice)) {
@@ -146,8 +140,6 @@ async function browseUrl(
 
   {
     // 自定义面积筛选
-    let minArea = lodash.get(customArea, 'min')
-    let maxArea = lodash.get(customArea, 'max')
     logger.info(`价格面积: [${minArea}, ${maxArea}]`)
 
     if (lodash.isNumber(minArea) || lodash.isNumber(maxArea)) {
@@ -210,12 +202,12 @@ async function browseUrl(
     .locator('li.clear')
     .all()
 
-  let items: IHouseInfo[] = []
+  let items: IHouse[] = []
 
   for (let item of sellList) {
     let [
-      href,
-      imageUrl,
+      url,
+      thumbnail,
       title,
       positionInfo,
       houseInfo,
@@ -232,8 +224,8 @@ async function browseUrl(
     ])
 
     items.push({
-      href: lodash.replace(lodash.trim(href), '\n', ' '),
-      imageUrl: lodash.replace(lodash.trim(imageUrl), '\n', ' '),
+      url: lodash.replace(lodash.trim(url), '\n', ' '),
+      thumbnail: lodash.replace(lodash.trim(thumbnail), '\n', ' '),
       title: lodash.replace(lodash.trim(title), '\n', ' '),
       positionInfo: lodash.replace(lodash.trim(positionInfo), '\n', ' '),
       houseInfo: lodash.replace(lodash.trim(houseInfo), '\n', ' '),
@@ -244,14 +236,14 @@ async function browseUrl(
 
   let mds = []
 
-  const existHouses: IHouseInfo[] = lodash.filter(items, (item) => {
-    return lodash.has(lastHousesMap, item.href)
+  const existHouses: IHouse[] = lodash.filter(items, (item) => {
+    return lodash.has(lastHousesMap, item.url)
   })
   logger.info(`已存在房源数 ${existHouses.length}`)
 
   if (existHouses.length > 0) {
     existHouses.forEach((item) => {
-      let lastHouseInfo: IHouseInfo = lastHousesMap[item.href]
+      let lastHouseInfo: IHouse = lastHousesMap[item.url]
       let lastPrice = lodash.toInteger(
         lodash.replace(lastHouseInfo.totalPrice, /[^0-9.]/g, ''),
       )
@@ -263,17 +255,17 @@ async function browseUrl(
         logger.info(`房源 ${item.title} 涨价 ${lastPrice} => ${currentPrice}`)
 
         mds.push(
-          `### [涨价 ${currentPrice - lastPrice}: ${item.title}](${item.href})`,
+          `### [涨价 ${currentPrice - lastPrice}: ${item.title}](${item.url})`,
         )
         mds.push(`${item.houseInfo} ${item.totalPrice}(${item.unitPrice})`)
-        mds.push(`![](${item.imageUrl})`)
+        mds.push(`![](${item.thumbnail})`)
       } else if (currentPrice < lastPrice) {
         logger.info(`房源 ${item.title} 降价 ${lastPrice} => ${currentPrice}`)
         mds.push(
-          `### [降价 ${lastPrice - currentPrice}: ${item.title}](${item.href})`,
+          `### [降价 ${lastPrice - currentPrice}: ${item.title}](${item.url})`,
         )
         mds.push(`${item.houseInfo} ${item.totalPrice}(${item.unitPrice})`)
-        mds.push(`![](${item.imageUrl})`)
+        mds.push(`![](${item.thumbnail})`)
       } else {
         logger.info(`房源 ${item.title} 价格未变 ${currentPrice}`)
       }
@@ -284,15 +276,15 @@ async function browseUrl(
     }
   }
 
-  const newHouses: IHouseInfo[] = lodash.differenceBy(items, lastHouses, 'href')
+  const newHouses: IHouse[] = lodash.differenceBy(items, lastHouses, 'url')
   logger.info(`新增房源数 ${newHouses.length}`)
 
   if (newHouses.length > 0) {
     mds.push(`## [${name}](${url}) 新增房源`)
     newHouses.forEach((item) => {
-      mds.push(`### [新增: ${item.title}](${item.href})`)
+      mds.push(`### [新增: ${item.title}](${item.url})`)
       mds.push(`${item.houseInfo} ${item.totalPrice}(${item.unitPrice})`)
-      mds.push(`![](${item.imageUrl})`)
+      mds.push(`![](${item.thumbnail})`)
     })
   }
 
@@ -312,8 +304,20 @@ async function browseUrl(
   logger.info('保存最新房源状态')
   logger.info(JSON.stringify(items, null, 2))
 
-  await storage.set(url, items as any)
-  await storage.close()
+  for (let item of items) {
+    await House.findOneAndUpdate(
+      { _districtId: district._id, url: item.url },
+      item,
+      {
+        upsert: true,
+      },
+    )
+  }
+
+  await District.findOneAndUpdate(
+    { _id: district._id },
+    { lastView: new Date() },
+  )
 }
 
 runMain(main)
