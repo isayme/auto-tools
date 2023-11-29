@@ -4,8 +4,6 @@ import axiosRetry from 'axios-retry'
 const axiosInstance = axios.create({})
 
 axios.interceptors.request.use(function (request) {
-  request.headers.set('x-request-id', crypto.randomUUID())
-
   request.params = request.params || {}
   request.params['_'] = Date.now()
 
