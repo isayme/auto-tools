@@ -13,6 +13,8 @@ import logger from '../util/logger'
 import { runMain } from '../util/run'
 
 async function main() {
+  const title = `知乎热榜 ${formatYYYYMMDDHHmm(new Date())}`
+
   chromium.use(StealthPlugin())
 
   const browser = await chromium.launch()
@@ -46,18 +48,18 @@ async function main() {
     version: 1,
   })
 
-  let lastHotList = await storage.get('last')
+  let lastHotList: any = await storage.get('last')
 
   await storage.set('last', hotList as any)
   await storage.close()
 
   hotList = lodash.differenceBy(hotList, lastHotList, 'url')
+
   if (hotList.length === 0) {
     logger.info('未发现新数据')
+    await dingtalkRobot.markdown(title, [title, '未发现新热榜数据'].join('\n'))
     return
   }
-
-  const title = `知乎热榜 ${formatYYYYMMDDHHmm(new Date())}`
 
   let hotText = [title]
 
