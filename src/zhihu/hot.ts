@@ -5,13 +5,16 @@
 
 import { kvsEnvStorage } from '@kvs/env'
 import lodash from 'lodash'
-import { chromium } from 'playwright'
+import { chromium } from 'playwright-extra'
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { formatYYYYMMDDHHmm } from '../util/date'
 import { dingtalkRobot } from '../util/dingtalk'
 import logger from '../util/logger'
 import { runMain } from '../util/run'
 
 async function main() {
+  chromium.use(StealthPlugin())
+
   const browser = await chromium.launch()
 
   const page = await browser.newPage()
@@ -20,6 +23,7 @@ async function main() {
   await Promise.all([
     page.goto('https://www.zhihu.com/billboard'),
     page.waitForSelector('#js-initialData', { state: 'attached' }),
+    page.waitForLoadState('domcontentloaded'),
   ])
 
   let initialData = await page.locator('#js-initialData').innerText()
