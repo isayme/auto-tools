@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@isayme/dingtalk-robot':
-    specifier: ^0.2.0
-    version: 0.2.0
+    specifier: ^0.2.1
+    version: 0.2.1
   '@kvs/env':
     specifier: ^2.1.5
     version: 2.1.5
@@ -136,8 +136,8 @@ packages:
       '@jridgewell/trace-mapping': 0.3.9
     dev: true
 
-  /@isayme/dingtalk-robot@0.2.0:
-    resolution: {integrity: sha512-XyVTkGz5JF48O180hgzpfnwHFpN0RZ+uobeLA3c6nvUj0DA7NrBp2WvU4kt7/LX53nKhFoAatbF2EGoO9XPoBw==}
+  /@isayme/dingtalk-robot@0.2.1:
+    resolution: {integrity: sha512-03hZPOGTob6EmSexdNLwtbsrXPRcjIy22tiKf8wRlKB287M1AcPp4gPwqflT/hc/fxI4RSEYET+O9qLdf0nGsg==}
     dependencies:
       axios: 1.6.0
       axios-retry: 4.0.0(axios@1.6.0)
