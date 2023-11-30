@@ -27,7 +27,7 @@ async function main() {
   const districts = await District.find({})
   logger.info(`共有 ${districts.length} 个小区待处理`)
   for (let district of districts) {
-    let { name, lastView, minViewDuration = '4h' } = district
+    let { name, lastView, minViewDuration = '3h' } = district
     let minViewDurationInMills = ms(minViewDuration)
 
     if (!lastView) {
