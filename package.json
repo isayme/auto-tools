@@ -13,7 +13,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@isayme/dingtalk-robot": "^0.2.1",
+    "@isayme/dingtalk-robot": "^0.2.2",
     "@kvs/env": "^2.1.5",
     "@kvs/node-localstorage": "^2.1.5",
     "@playwright/test": "^1.39.0",
