@@ -55,7 +55,10 @@ async function getHotTopicWithPlaywright(): Promise<ITopic[]> {
       server: socks5Server,
     }
   }
-  const browser = await firefox.launchPersistentContext('./.pw-cache', opts)
+  const browser = await firefox.launchPersistentContext(
+    '/ql/data/.pw-cache',
+    opts,
+  )
 
   const page = await browser.newPage()
 
