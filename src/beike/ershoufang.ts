@@ -16,8 +16,8 @@ async function main() {
     logger.warn('环境变量 BEIKE_MONGODB_URI 未配置')
     return
   }
-
-  await mongoose.connect(mongoUrl)
+  logger.info(mongoUrl)
+  await mongoose.connect(mongoUrl, { dbName: 'qinglong' })
 
   const browser = await chromium.launch()
   const page: Page = await browser.newPage({})
@@ -49,16 +49,23 @@ async function main() {
 
 async function browseUrl(page: Page, district: IDistrict) {
   let { name, url, conditions, minPrice, maxPrice, minArea, maxArea } = district
+  conditions = conditions || []
 
   console.log('\n')
   logger.info(
     `查看小区 ${name}, 网址: ${url}, 删选条件: ${conditions}, 删选价格: [${minPrice}, ${maxPrice}], 筛选面积: [${minArea}, ${maxArea}]`,
   )
 
-  const lastHouses = await House.find({ _districtId: district._id })
+  const lastHouses = await House.find({
+    _districtId: district._id,
+    lastView: {
+      $gt: dayjs(Date.now()).add(-20, 'day'),
+    },
+  })
+  const lastHousesLength = lastHouses.length
   const lastHousesMap = {}
   if (Array.isArray(lastHouses)) {
-    logger.info(`上次记录房源数 ${lastHouses.length}`)
+    logger.info(`上次记录房源数 ${lastHousesLength}`)
 
     lastHouses.forEach((house) => {
       lastHousesMap[house.url] = house
@@ -196,42 +203,66 @@ async function browseUrl(page: Page, district: IDistrict) {
 
   await randomDelay(1500, 5000)
 
-  let sellList = await page
-    .locator(sellListContentSelector)
-    .first()
-    .locator('li.clear')
-    .all()
-
   let items: IHouse[] = []
 
-  for (let item of sellList) {
-    let [
-      url,
-      thumbnail,
-      title,
-      positionInfo,
-      houseInfo,
-      totalPrice,
-      unitPrice,
-    ] = await Promise.all([
-      item.locator('a.img').getAttribute('href'),
-      item.locator('img').first().getAttribute('data-original'),
-      item.locator('.title').innerText(),
-      item.locator('.positionInfo').innerText(),
-      item.locator('.houseInfo').innerText(),
-      item.locator('.totalPrice').innerText(),
-      item.locator('.unitPrice').innerText(),
-    ])
+  while (true) {
+    let pageNum = '1'
+    let currentPageLocator = page.locator('.house-lst-page-box .on')
+    if ((await currentPageLocator.count()) > 0) {
+      pageNum = await currentPageLocator.innerText()
+    }
 
-    items.push({
-      url: lodash.replace(lodash.trim(url), '\n', ' '),
-      thumbnail: lodash.replace(lodash.trim(thumbnail), '\n', ' '),
-      title: lodash.replace(lodash.trim(title), '\n', ' '),
-      positionInfo: lodash.replace(lodash.trim(positionInfo), '\n', ' '),
-      houseInfo: lodash.replace(lodash.trim(houseInfo), '\n', ' '),
-      totalPrice: lodash.replace(lodash.trim(totalPrice), '\n', ' '),
-      unitPrice: lodash.replace(lodash.trim(unitPrice), '\n', ' '),
+    let sellList = await page
+      .locator(sellListContentSelector)
+      .first()
+      .locator('li.clear')
+      .all()
+
+    for (let item of sellList) {
+      let [
+        url,
+        thumbnail,
+        title,
+        positionInfo,
+        houseInfo,
+        totalPrice,
+        unitPrice,
+      ] = await Promise.all([
+        item.locator('a.img').getAttribute('href'),
+        item.locator('img').first().getAttribute('data-original'),
+        item.locator('.title').innerText(),
+        item.locator('.positionInfo').innerText(),
+        item.locator('.houseInfo').innerText(),
+        item.locator('.totalPrice').innerText(),
+        item.locator('.unitPrice').innerText(),
+      ])
+
+      items.push({
+        url: lodash.replace(lodash.trim(url), '\n', ' '),
+        thumbnail: lodash.replace(lodash.trim(thumbnail), '\n', ' '),
+        title: lodash.replace(lodash.trim(title), '\n', ' '),
+        positionInfo: lodash.replace(lodash.trim(positionInfo), '\n', ' '),
+        houseInfo: lodash.replace(lodash.trim(houseInfo), '\n', ' '),
+        totalPrice: lodash.replace(lodash.trim(totalPrice), '\n', ' '),
+        unitPrice: lodash.replace(lodash.trim(unitPrice), '\n', ' '),
+        lastView: new Date(),
+      })
+    }
+
+    // 是否还有下一页？
+    let nexPageNum = lodash.toInteger(pageNum) + 1
+    let nextPageLocator = page.locator('.house-lst-page-box a', {
+      hasText: new RegExp(`^${nexPageNum}$`),
     })
+    if ((await nextPageLocator.count()) > 0) {
+      logger.info(`当前是第 ${pageNum} 页, 还有下一页，等待浏览...`)
+      await nextPageLocator.click()
+      await randomDelay(5000, 10000)
+      await page.waitForLoadState('networkidle')
+    } else {
+      logger.info(`当前是第 ${pageNum} 页, 没有下一页`)
+      break
+    }
   }
 
   let mds = []
@@ -288,21 +319,20 @@ async function browseUrl(page: Page, district: IDistrict) {
     })
   }
 
-  if (mds.length > 0) {
+  if (mds.length > 0 && lastHousesLength == 0) {
     logger.info(mds.join('\n'))
     await dingtalkRobot.markdown({
       title: `${name} 二手房信息`,
       text: mds.join('\n'),
     })
   } else {
-    await dingtalkRobot.markdown({
-      title: `${name} 二手房信息`,
-      text: `[${name}](${url}) 房源信息无更新`,
-    })
+    // await dingtalkRobot.markdown({
+    //   title: `${name} 二手房信息`,
+    //   text: `[${name}](${url}) 房源信息无更新`,
+    // })
   }
 
-  logger.info('保存最新房源状态')
-  logger.info(JSON.stringify(items, null, 2))
+  logger.info(`保存最新房源状态, 共找到房源 ${items.length} 个`)
 
   for (let item of items) {
     await House.findOneAndUpdate(

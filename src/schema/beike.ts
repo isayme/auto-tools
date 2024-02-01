@@ -65,6 +65,7 @@ interface IHouse {
   houseInfo: string
   totalPrice: string
   unitPrice: string
+  lastView: Date
 }
 
 /**
@@ -80,6 +81,7 @@ const houseSchema = new mongoose.Schema<IHouse>({
   houseInfo: String, // 房源概要信息
   totalPrice: String, // 总价
   unitPrice: String, // 单价
+  lastView: Date, // 上次浏览时间
 })
 
 const House = mongoose.model('House', houseSchema)
