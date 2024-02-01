@@ -51,6 +51,7 @@ async function filterNew(
   const storage = await kvsEnvStorage({
     name: storageName,
     version: 1,
+    storeFilePath: '/ql/data/.cache/kvs-node-localstorage',
   })
 
   let lastProducts = await storage.get('last')

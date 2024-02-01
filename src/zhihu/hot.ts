@@ -46,6 +46,7 @@ async function main() {
   const storage = await kvsEnvStorage({
     name: 'zhihu-hot',
     version: 1,
+    storeFilePath: '/ql/data/.cache/kvs-node-localstorage',
   })
 
   let lastHotList: any = await storage.get('last')
