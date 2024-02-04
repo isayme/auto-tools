@@ -44,6 +44,7 @@ async function main() {
     await browseUrl(page, district)
   }
 
+  await dingtalkRobot.text(`已完成本次房源查看，小区数 ${districts.length}`)
   await browser.close()
 }
 
