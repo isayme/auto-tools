@@ -3,7 +3,9 @@ import mongoose from 'mongoose'
 
 import lodash from 'lodash'
 import ms from 'ms'
-import { Page, chromium } from 'playwright'
+import { Page } from 'playwright'
+import { chromium } from 'playwright-extra'
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { District, House, IDistrict, IHouse } from '../schema/beike'
 import { randomDelay } from '../util/delay'
 import { dingtalkRobot } from '../util/dingtalk'
@@ -11,6 +13,8 @@ import logger from '../util/logger'
 import { runMain } from '../util/run'
 
 async function main() {
+  chromium.use(StealthPlugin())
+
   let mongoUrl = process.env.BEIKE_MONGODB_URI
   if (!mongoUrl) {
     logger.warn('环境变量 BEIKE_MONGODB_URI 未配置')
