@@ -359,10 +359,13 @@ async function browseUrl(page: Page, district: IDistrict) {
 
   if (mds.length > 0 && lastHousesLength != 0) {
     logger.info(mds.join('\n'))
-    await dingtalkRobot.markdown({
-      title: `${name} 二手房信息`,
-      text: mds.join('\n'),
-    })
+    let arr = partition(mds, 20)
+    for (let item of arr) {
+      await dingtalkRobot.markdown({
+        title: `${name} 二手房信息`,
+        text: item.join('\n'),
+      })
+    }
   } else {
     // await dingtalkRobot.markdown({
     //   title: `${name} 二手房信息`,
@@ -370,5 +373,9 @@ async function browseUrl(page: Page, district: IDistrict) {
     // })
   }
 }
+
+function partition(array, n) {
+  return array.length ? [array.splice(0, n)].concat(partition(array, n)) : [];
+}  
 
 runMain(main)
