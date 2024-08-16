@@ -12,7 +12,19 @@ import { dingtalkRobot } from '../util/dingtalk'
 import logger from '../util/logger'
 import { runMain } from '../util/run'
 
+const storageStateFile = './storageState.json'
+
+async function closeBrowser(browser: Browser, browserContext: BrowserContext) {
+  await browserContext.storageState({ path: storageStateFile })
+  await browser.close()
+}
+
 async function main() {
+  let storageStateFileExist = existsSync(storageStateFile)
+  if (!storageStateFileExist) {
+    writeFileSync(storageStateFile, '{}')
+  }
+  
   chromium.use(StealthPlugin())
 
   let mongoUrl = process.env.BEIKE_MONGODB_URI
@@ -24,7 +36,10 @@ async function main() {
   await mongoose.connect(mongoUrl, { dbName: 'qinglong' })
 
   const browser = await chromium.launch()
-  const page: Page = await browser.newPage({})
+  const browserContext = await browser.newContext({
+    storageState: storageStateFile,
+  })
+  const page: Page = await browserContext.newPage()
 
   let now = new Date()
 
@@ -49,7 +64,7 @@ async function main() {
   }
 
   await dingtalkRobot.text(`已完成本次房源查看，小区数 ${districts.length}`)
-  await browser.close()
+  await closeBrowser(browser, browserContext)
 }
 
 async function browseUrl(page: Page, district: IDistrict) {
