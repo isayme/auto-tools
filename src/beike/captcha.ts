@@ -58,7 +58,10 @@ async function main() {
   await delay(3000)
 
   let src = await verifyImg.getAttribute('src')
-  logger.info('验证码图片: ' + src)
+  logger.info(`验证码图片: ${src}`)
+  logger.info(`账号: ${chaojiyingUser}`)
+  logger.info(`softid: ${chaojiyingSoftid}`)
+  logger.info(`codetype: ${chaojiyingCodetype}`)
 
   const params = new URLSearchParams({ foo: 'bar' })
   params.append('user', chaojiyingUser)
