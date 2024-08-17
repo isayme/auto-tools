@@ -1,17 +1,24 @@
 import dayjs from 'dayjs'
-import mongoose from 'mongoose'
 import { existsSync, writeFileSync } from 'fs'
+import mongoose from 'mongoose'
 
+import delay from 'delay'
 import lodash from 'lodash'
 import ms from 'ms'
-import { Page } from 'playwright'
+import { Browser, BrowserContext, Page, Response } from 'playwright'
 import { chromium } from 'playwright-extra'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { District, House, IDistrict, IHouse } from '../schema/beike'
+import { axiosInstance } from '../util/axios'
 import { randomDelay } from '../util/delay'
 import { dingtalkRobot } from '../util/dingtalk'
 import logger from '../util/logger'
 import { runMain } from '../util/run'
+
+const chaojiyingUser = process.env.CHAOJIYING_USER
+const chaojiyingPass = process.env.CHAOJIYING_PASS
+const chaojiyingSoftid = process.env.CHAOJIYING_SOFTID
+const chaojiyingCodetype = process.env.CHAOJIYING_CODETYPE || '1902'
 
 const storageStateFile = './storageState.json'
 
@@ -20,12 +27,70 @@ async function closeBrowser(browser: Browser, browserContext: BrowserContext) {
   await browser.close()
 }
 
+async function handleCaptcha(page: Page, response: Response) {
+  await page.goto('https://sh.ke.com', {
+    waitUntil: 'domcontentloaded',
+  })
+  await delay(3000)
+
+  let verifyBtn = page.locator('.bk-captcha-btn')
+  if ((await verifyBtn.count()) <= 0) {
+    logger.info('无需验证')
+    return
+  }
+
+  await verifyBtn.click()
+
+  let verifyImg = page.locator('.bk-captcha-box .image-code')
+  if ((await verifyImg.count()) <= 0) {
+    logger.info('未发现图片')
+    return
+  }
+
+  await delay(lodash.random(3000, 5000))
+
+  let src = await verifyImg.getAttribute('src')
+  logger.info(`验证码图片: ${src}`)
+  logger.info(`账号: ${chaojiyingUser}`)
+  logger.info(`softid: ${chaojiyingSoftid}`)
+  logger.info(`codetype: ${chaojiyingCodetype}`)
+
+  const params = new URLSearchParams({ foo: 'bar' })
+  params.append('user', chaojiyingUser)
+  params.append('pass', chaojiyingPass)
+  params.append('softid', chaojiyingSoftid)
+  params.append('codetype', chaojiyingCodetype)
+  params.append('file_base64', src.replace('data:image/jpeg;base64,', ''))
+
+  const res = await axiosInstance.request({
+    method: 'POST',
+    url: 'http://upload.chaojiying.net/Upload/Processing.php',
+    data: params,
+  })
+
+  logger.info('验证码识别结果: ' + JSON.stringify(res.data))
+
+  const { err_no, pic_str } = res.data
+  if (err_no != 0) {
+    return
+  }
+
+  for (let ch of pic_str.split('')) {
+    logger.info(`输入: ${ch}`)
+    await page
+      .locator('.input-box')
+      .type(ch, { delay: lodash.random(500, 1500) })
+  }
+
+  await delay(5000)
+}
+
 async function main() {
   let storageStateFileExist = existsSync(storageStateFile)
   if (!storageStateFileExist) {
     writeFileSync(storageStateFile, '{}')
   }
-  
+
   chromium.use(StealthPlugin())
 
   let mongoUrl = process.env.BEIKE_MONGODB_URI
@@ -41,6 +106,12 @@ async function main() {
     storageState: storageStateFile,
   })
   const page: Page = await browserContext.newPage()
+
+  page.on('response', (response) => {
+    if (response.status() == 302) {
+      handleCaptcha(page, response)
+    }
+  })
 
   let now = new Date()
 
@@ -375,7 +446,7 @@ async function browseUrl(page: Page, district: IDistrict) {
 }
 
 function partition(array, n) {
-  return array.length ? [array.splice(0, n)].concat(partition(array, n)) : [];
-}  
+  return array.length ? [array.splice(0, n)].concat(partition(array, n)) : []
+}
 
 runMain(main)
